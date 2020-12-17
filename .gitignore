@@ -1,0 +1,30 @@
+HELP.md
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+cmake-build-debug
+cmake-build-debug-centos-6
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+
+### VS Code ###
+.vscode/
+#out/
+.vs/
+
+### CMake 构建文件 ###
+#CMakeSettings.json
+**/cmake-build-debug/
+**/CMakeFiles/
+**/cmake_install.cmake
+**/CMakeCache.txt
+**/Makefile
