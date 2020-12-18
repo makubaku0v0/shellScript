@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
         iter++;
     }
     if (iter == 3) {
-        printf("未能找到判定文件");
+        printf("未能找到判定文件\n");
         return -1;
     }
 
@@ -103,14 +103,17 @@ int main(int argc, char **argv) {
 
     //获取平台和版本失败
     if (!os || !version) {
-        printf("Obtaining Linux Version Failed");
+        printf("Obtaining Linux Version Failed\n");
         return -1;
     }
 
     //对redhat进行特殊处理
     if (strcmp(os, "red") == 0) {
         free(os);
-        os = calloc(128, sizeof(char));
+        if ((os = calloc(128, sizeof(char))) == NULL) {
+            printf("Calloc Memory Failed\n");
+            return -1;
+        }
         strcpy(os, "redhat");
     }
 
