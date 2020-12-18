@@ -3,7 +3,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <sys/stat.h>
+#include<sys/stat.h>
+#include<sys/types.h>
 
 //返回指令执行结果
 char *executeShell(char *command, int resultLength);
