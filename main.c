@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 
-#define safeFree(p) { if(p){ free(p);  p=NULL;}}
+#define safeFree(p) { if(p){ free(p);  (p)=NULL;}}
 
 //返回指令执行结果
 char *executeShell(char *command, int resultLength);
@@ -17,33 +17,33 @@ int isNormalFile(char *filePath);
 int isDownloadCorrect(char *downloadCMD, char *filePath);
 
 int main(int argc, char **argv) {
-    //提示输出
-    printf("请按如下格式输入检测程序启动参数\n");
-    printf("IP Port\n");
-    printf("启动指令示例:./linux-terminal-detection 127.0.0.1 8086\n");
 
     //判断输入参数格式是否正确
     if (argc != 3) {
-        printf("未按正确格式输入启动参数\n");
+        printf("The startup parameters were not entered in the correct format\n");
+        //提示输出
+        printf("Please enter the test program startup parameters in the following format:\n");
+        printf("./linux-terminal-detection IP Port\n");
+        printf("Example of start command:./linux-terminal-detection 127.0.0.1 8086\n");
         return -1;
     }
 
     //获取参数ip
     char hostIP[16] = "";
-    if (strlen(argv[1]) > 16) {
-        printf("输入IP格式错误\n");
+    if (strlen(argv[1]) > 15 || strlen(argv[1]) < 7) {
+        printf("Input IP format error\n");
         return -1;
     }
     strncpy(hostIP, argv[1], strlen(argv[1]));
 
     //获取参数port
     char port[6] = "";
-    if (strlen(argv[2]) > 6) {
-        printf("输入端口格式错误\n");
+    if (strlen(argv[2]) > 5 || strlen(argv[2]) < 1) {
+        printf("Input port format error\n");
         return -1;
     }
     strncpy(port, argv[2], strlen(argv[2]));
-    printf("\n主机IP和端口号为：http://%s:%s\n", hostIP, port);
+    printf("\nThe host IP and listing port：http://%s:%s\n", hostIP, port);
 
     //获取当前路径
     char homePath[1024] = "";
@@ -92,13 +92,13 @@ int main(int argc, char **argv) {
     while (iter != 3) {
         //若该文件存在
         if ((access(releaseFiles[iter], F_OK)) != -1) {
-            printf("\n判定文件 %s 存在\n", releaseFiles[iter]);
+            printf("\nJudgment document %s exist\n", releaseFiles[iter]);
             break;
         }
         iter++;
     }
     if (iter == 3) {
-        printf("未能找到判定文件\n");
+        printf("The judgment file could not be found\n");
         return -1;
     }
 
@@ -275,7 +275,7 @@ int main(int argc, char **argv) {
             }
         }
     } else {
-        confFlag = 0;
+        confFlag = 1;
         //创建/etc/fonts目录
         if (mkdir("/etc/fonts", 0644) == -1) {
             printf("===== \t   !!! \tCreate /etc/fonts Failed\t\t!!!   =====\n");
@@ -291,7 +291,10 @@ int main(int argc, char **argv) {
     printf("=====        Executing Windows Terminal Detection Program\t=====\n");
     char detectCMD[1024] = "";
     snprintf(detectCMD, 1024, "./%s detect.conf", binaryFile);
-//    system(detectCMD);
+    if (system(detectCMD) == -1) {
+        printf("===== \\t   !!! \\tRun %s Failed\\t\\t!!!   =====\\n", binaryFile);
+        return -1;
+    }
 
     //回传检测结果
     printf("=====\t           Uploading Detection Raw Data\t\t\t\t=====\n");
@@ -302,10 +305,9 @@ int main(int argc, char **argv) {
         printf("===== \\t   !!! \\tCreat Random Number Failed\\t\\t!!!   =====\\n");
         return -1;
     }
-    //去除换行符
-    randomString[strlen(randomString) - 1] = '\0';
 
-    //获取文件个数
+    //回传.sqlite文件
+    //获取.sqlite文件个数
     char *fileNumInfo = executeShell("ls -A .sqlite/|wc -w", 1024);
 //    char *fileNumInfo = executeShell("ls -A lib64 | wc -w", 1024);
     if (fileNumInfo == NULL) {
@@ -315,19 +317,26 @@ int main(int argc, char **argv) {
     int fileNum = atoi(fileNumInfo);
     if (fileNum >= 1) {
         //读取目录下所有文件
-        DIR *dir;
+        DIR *dir = NULL;
         if ((dir = (DIR *) opendir(".sqlite")) == NULL) {
 //        if ((dir = (DIR *) opendir("lib64")) == NULL) {
             printf("===== \\t   !!! \\tOpen .sqlite Failed\\t\\t!!!   =====\\n");
             return -1;
         }
+
+        //进入.sqlite文件夹
+        if (chdir(".sqlite") == -1) {
+//        if (chdir("lib64") == -1) {
+            printf("===== \t   !!! \tcd .sqlite Dir Failed\t\t!!!   =====\n");
+            return -1;
+        }
+
         struct dirent *entry = NULL;
         for (entry = readdir(dir); entry != NULL; entry = readdir(dir)) {
             if (entry->d_type != DT_DIR) {
                 //改名
                 char mvCMD[1024] = "";
-                snprintf(mvCMD, 1024, "mv .sqlite/%s .sqlite/%s.%s", entry->d_name, randomString, entry->d_name);
-//                snprintf(mvCMD, 1024, "mv lib64/%s lib64/%s.%s", entry->d_name, randomString, entry->d_name);
+                snprintf(mvCMD, 1024, "mv %s %s.%s", entry->d_name, randomString, entry->d_name);
                 if (system(mvCMD) == -1) {
                     printf("===== \\t   !!! \\t%s Failed\\t\\t!!!   =====\\n", mvCMD);
                     return -1;
@@ -335,22 +344,90 @@ int main(int argc, char **argv) {
 
                 //上传
                 char uploadCMD[1024] = "";
-                snprintf(uploadCMD, "curl -F sqliteFile=@.sqlite/%s http://%s:%s/terminal/sqlite", entry->d_name,
-                         hostIP, port);
-                if (system(mvCMD) == -1) {
+                snprintf(uploadCMD, 1024, "curl -F sqliteFile=@%s.%s http://%s:%s/terminal/sqlite", randomString,
+                         entry->d_name, hostIP, port);
+                if (system(uploadCMD) == -1) {
                     printf("===== \\t   !!! \\tUpload %s Failed\\t\\t!!!   =====\\n", entry->d_name);
                     return -1;
+                } else {
+                    putchar('\n');
                 }
             }
         }
 
-
+        //切出.sqlite文件夹
+        if (chdir("..") == -1) {
+            printf("===== \t   !!! \tcd .. Dir Failed\t\t!!!   =====\n");
+            return -1;
+        }
     }
 
+    //上传json检测文件
+    //获取json文件名
+    char *jsonFile = NULL;
+    if ((jsonFile = executeShell("ls .| grep .json", 1024)) == NULL) {
+        printf("===== \\t   !!! \\tGet Json File Failed\\t\\t!!!   =====\\n");
+        return -1;
+    }
+    //将json改名
+    char mvCMD[1024] = "";
+    snprintf(mvCMD, 1024, "mv %s %s.%s", jsonFile, randomString, jsonFile);
+    if (system(mvCMD) == -1) {
+        printf("===== \\t   !!! \\t%s Failed\\t\\t!!!   =====\\n", mvCMD);
+        return -1;
+    }
 
+    //重新获取json文件名
+    safeFree(jsonFile)
+    if ((jsonFile = executeShell("ls .| grep .json", 1024)) == NULL) {
+        printf("===== \\t   !!! \\tGet Json File Failed\\t\\t!!!   =====\\n");
+        printf("=====\t  ERROR!!! Linux Terminal Detection Failed\t\t\t=====\n");
+        return -1;
+    }
+    //上传json文件
+    char uploadCMD[1024] = "";
+    snprintf(uploadCMD, 1024, "curl -F jsonfile=@%s http://%s:%s/terminal/terminal-detect/linux", jsonFile, hostIP,
+             port);
+    if (system(uploadCMD) == -1) {
+        printf("===== \\t   !!! \\tUpload%s Failed\\t\\t!!!   =====\\n", jsonFile);
+        return -1;
+    } else {
+        putchar('\n');
+    }
+
+    printf("=====\t         Linux Terminal Detection Success\t\t\t=====\n");
     safeFree(randomString)
     safeFree(fileNumInfo)
 
+    //删除文件拷贝
+    switch (confFlag) {
+        case -1:
+            break;
+        case 0:
+            if (system("rm -f /etc/fonts/fonts.conf") == -1) {
+                printf("===== \\t   !!! \\tRemove fonts.conf File Failed\\t\\t!!!   =====\\n");
+            }
+            break;
+        case 1:
+            if (system("rm -rf /etc/fonts") == -1) {
+                printf("===== \\t   !!! \\tRemove fonts Dir Failed\\t\\t!!!   =====\\n");
+            }
+            break;
+        default:
+            break;
+    }
+
+    //切出.workspace目录
+    if (chdir("..") == -1) {
+        printf("===== \t   !!! \tcd .. Dir Failed\t\t!!!   =====\n");
+        return -1;
+    }
+
+    //删除.workspace目录
+    if (system("rm -rf .workspace") == -1) {
+        printf("===== \\t   !!! \\tRemove .workspace Dir Failed\\t\\t!!!   =====\\n");
+        return -1;
+    }
 
     return 0;
 }
@@ -377,6 +454,10 @@ char *executeShell(char *command, int resultLength) {
         }
     }
     pclose(fp);
+
+    //去除换行符
+    if (cmdResult[i - 1] == '\n')
+        cmdResult[i - 1] = '\0';
 
     return cmdResult;
 }
