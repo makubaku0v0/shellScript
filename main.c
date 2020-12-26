@@ -281,7 +281,7 @@ int main(int argc, char **argv) {
         snprintf(envCMD, 1024, "PATH=%s:/.workspace/binaryutils/p7zip", homePath);
     }
     putenv(envCMD);
-    safeFree(PATHEnv)
+//    safeFree(PATHEnv)
     safeFree(envCMD)
 
 
