@@ -247,7 +247,12 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    //添加环境变量
+    if (system("chmod +x binaryutils/p7zip/*") == -1) {
+        printf("===== \t   !!! \tchmod +x p7zip/* Failed\t\t!!!   =====\n");
+        return -1;
+    }
+
+    //添加LD_LIBRARY_PATH环境变量
     char *LLP = getenv("LD_LIBRARY_PATH");
     int LLPLength = 0;
     char *envCMD = NULL;
@@ -262,6 +267,23 @@ int main(int argc, char **argv) {
     }
     putenv(envCMD);
     safeFree(LLP)
+    safeFree(envCMD)
+
+    //添加PATH变量
+    char *PATHEnv = getenv("PATH");
+    int PATHLength = 0;
+    if (PATHEnv) {
+        PATHLength = strlen(PATHEnv);
+        envCMD = calloc(sizeof(char), PATHLength + 1024);
+        snprintf(envCMD, PATHLength + 1024, "PATH=%s:/.workspace/binaryutils/p7zip:%s", homePath, PATHEnv);
+    } else {
+        envCMD = calloc(sizeof(char), 1024);
+        snprintf(envCMD, 1024, "PATH=%s:/.workspace/binaryutils/p7zip", homePath);
+    }
+    putenv(envCMD);
+    safeFree(PATHEnv)
+    safeFree(envCMD)
+
 
     //查看系统配置文件
     int confFlag = -1;
